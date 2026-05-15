@@ -1,0 +1,9 @@
+# Node / frontend
+node_modules/
+dist/
+.vite/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+
