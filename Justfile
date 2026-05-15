@@ -1,14 +1,13 @@
 clean:
   cd backend && cargo clean
-  cd frontend && flutter clean
+  cd frontend && rm -rf dist node_modules
 
 codegen:
-  cd frontend && flutter pub get && flutter pub run build_runner build
+  cd frontend && bun install
 
 format:
   cd backend && cargo fmt
-  cd frontend && dart format .
 
 lint:
   cd backend && cargo clippy
-  cd frontend && flutter analyze
+  cd frontend && bun run build

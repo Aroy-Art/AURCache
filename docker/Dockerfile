@@ -1,15 +1,17 @@
 ARG TARGET_ARCH=linux/amd64
 ARG LATEST_COMMIT_SHA=dev
+ARG APP_VERSION=dev
 
-FROM --platform=linux/amd64 registry.gitlab.com/polycule_client/flutter-dockerimages:3.41.2-web AS frontend_builder
+FROM --platform=linux/amd64 oven/bun:1 AS frontend_builder
+ARG APP_VERSION
 WORKDIR /app
 
-COPY frontend /app
-COPY backend/aurcache/Cargo.toml /app
+COPY frontend/package.json frontend/bun.lock ./
+RUN bun install --frozen-lockfile
 
-RUN flutter pub get
-RUN flutter pub run build_runner build --delete-conflicting-outputs
-RUN flutter build web --release --wasm --dart-define APP_VERSION=$(grep '^version' Cargo.toml | sed -E 's/version *= *"([^"]+)"/\1/')
+COPY frontend/ ./
+COPY backend/aurcache/Cargo.toml /tmp/Cargo.toml
+RUN VITE_APP_VERSION=${APP_VERSION:-$(grep '^version' /tmp/Cargo.toml | sed -E 's/version *= *"([^"]+)"/\1/')} bun run build
 
 FROM --platform=linux/amd64 rust:1.95.0 AS builder
 ARG LATEST_COMMIT_SHA
@@ -20,7 +22,7 @@ WORKDIR /app
 
 # Copy the Rust project files
 COPY backend/ /app/
-COPY --from=frontend_builder /app/build/web /app/aurcache-api/web
+COPY --from=frontend_builder /app/dist /app/aurcache-api/web
 
 ARG TARGET_ARCH
 ADD docker/build-rust.sh /root
